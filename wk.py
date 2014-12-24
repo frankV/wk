@@ -68,5 +68,14 @@ def setup(*args, **kwargs):
             click.pause()
         click.secho('using project name: %s' % name.lower(), fg='green', nl=True)
         # maybe I should search the pwd for a requirements.txt file?
-        subprocess.call(['mkvirtualenv', name], shell=True)
+        
+        # If the user has a preferred home for their environment storage, we place the env there
+        # as the name of the project lowercased.
+        # Otherwise, defaults to the project directory with the generic name, 'venv'.
+        virtualenv_dir = os.getenv('WORKON_HOME')
+        if virtualenv_dir:
+            subprocess.Popen(['virtualenv', name], cwd=virtualenv_dir)
+        else:
+            subprocess.Popen(['virtualenv', 'venv'], cwd=directory)
+
         click.pause()
