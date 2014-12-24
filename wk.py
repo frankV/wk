@@ -1,6 +1,5 @@
 import os
 import sys
-import pip
 import subprocess
 
 import click
@@ -17,6 +16,21 @@ class WK(object):
         self.config[key] = value
         if self.verbose:
             click.echo('  config[%s] = %s' % (key, value), file=sys.stderr)
+
+    @property
+    def _file(self):
+        pass
+
+    @classmethod
+    def save(cls, obj, filename):
+        with open(filename, "w") as f:
+            yaml.dump(obj, f, default_flow_style=False)
+
+    @classmethod
+    def load(cls, obj, filename):
+        with open(filename, "r") as f:
+            obj = yaml.load(f)
+            return obj
 
     def __repr__(self):
         return '<WK %r>' % self.name
@@ -74,14 +88,14 @@ def setup(wk, *args, **kwargs):
                 wk.set_config('venv_existing', True)
                 venvs = os.walk(os.getenv('WORKON_HOME')).next()[1]
                 for index, env in enumerate(venvs):
-                    print '%s: %s' % (index, env)
+                    print '{0: >2d}: {1}'.format(index, env)
                 click.secho('enter number', fg='green', nl=False)
                 i = click.prompt('', type=int)
                 wk.set_config('venv_directory', os.path.join(os.getenv('WORKON_HOME'), venvs[i]))
             else:
                 click.secho('virtualenv name,', fg='green', nl=False)
                 venv = click.prompt('', type=str, default=wk.name)
-                    # need a callback for this
+                # need a callback for this
                 subprocess.call(['virtualenv', wk.name], cwd=os.getenv('WORKON_HOME'))
                 wk.set_config('venv_directory', os.path.join(os.getenv('WORKON_HOME'), wk.name))
 
