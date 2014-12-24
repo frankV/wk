@@ -1,5 +1,6 @@
 import os
 import sys
+import yaml
 import subprocess
 
 import click
@@ -19,15 +20,17 @@ class WK(object):
 
     @property
     def _file(self):
-        pass
+        return os.path.join(os.getenv('WK_HOME'), self.name + '.yaml')
 
     @classmethod
-    def save(cls, obj, filename):
+    def save(cls, obj):
+        filename = obj._file
         with open(filename, "w") as f:
             yaml.dump(obj, f, default_flow_style=False)
 
     @classmethod
-    def load(cls, obj, filename):
+    def load(cls, obj):
+        filename = obj._file
         with open(filename, "r") as f:
             obj = yaml.load(f)
             return obj
@@ -66,8 +69,11 @@ def setup(wk, *args, **kwargs):
     """
     if not os.getenv('WK_HOME'):
         click.secho('please set your wk home directory', fg='red')
-        click.secho('  $ export WK_HOME=~/.wk', fg='red')
+        click.secho(' $ export WK_HOME=~/.wk', fg='red')
         exit()
+
+    if not os.path.exists(os.getenv('WK_HOME')):
+        os.makedirs(os.getenv('WK_HOME'))
 
     cwd = os.getcwd()
 
@@ -111,5 +117,14 @@ def setup(wk, *args, **kwargs):
             wk.set_config('venv_directory', os.path.join(directory, venv))
 
         click.pause()
-        print wk.name
-        print wk.config
+        # print wk.name
+        # print wk.config
+        WK.save(wk)
+
+
+@cli.command()
+@wk_ctx
+def load(wk, *args, **kwargs):
+    wk.name = 'foo'
+    wk = WK.load(wk)
+    print wk.config
