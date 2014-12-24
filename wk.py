@@ -26,8 +26,8 @@ wk_ctx = click.make_pass_decorator(WK)
 
 
 @click.group()
-@click.option('--wk-name', envvar='wk_name', default='.wk',
-              metavar='NAME', help='Changes wk project name.')
+@click.option('--name', envvar='wk_name', default='.wk',
+              metavar='NAME', help='wk project name')
 @click.option('--config', nargs=2, multiple=True,
               metavar='KEY VALUE', help='Overrides a config key/value pair.')
 @click.option('--verbose', '-v', is_flag=True, help='verbose ouput')
@@ -39,7 +39,7 @@ def cli(ctx, wk_name, config, verbose):
     this point onwards other commands can refer to it by using the
     @wk_ctx decorator.
     """
-    ctx.obj = WK(os.path.abspath(wk_name))
+    ctx.obj = WK(wk_name)
     ctx.obj.verbose = verbose
     for key, value in config:
         ctx.obj.set_config(key, value)
@@ -47,35 +47,44 @@ def cli(ctx, wk_name, config, verbose):
 
 @cli.command()
 @wk_ctx
-def setup(*args, **kwargs):
+def setup(wk, *args, **kwargs):
     """
     """
+    if not os.getenv('WK_HOME'):
+        click.secho('please set your wk home directory', fg='red')
+        click.secho('  $ export WK_HOME=~/.wk', fg='red')
+        exit()
+
     cwd = os.getcwd()
 
     click.secho('wk setup project', fg='blue', bold=True)
 
     click.secho('enter project name,', fg='green', nl=False)
-    name = click.prompt('', type=str, \
+    wk.name = click.prompt('', type=str, \
                         default=os.path.basename(os.path.normpath(cwd)).lower())
 
     click.secho('enter project directory,', fg='green', nl=False)
     directory = click.prompt('', type=str, default=cwd)
+    wk.set_config('directory', directory)
 
     if click.confirm('VirtualEnv?'):
+        wk.set_config('venv', True)
         if click.confirm('From existing?'):
-            # os.system('source /usr/local/bin/virtualenvwrapper.sh')
-            subprocess.call('v', shell=True)
+            wk.set_config('venv_existing', True)
             click.pause()
-        click.secho('using project name: %s' % name.lower(), fg='green', nl=True)
+        click.secho('using project name: %s' % wk.name, fg='green', nl=True)
         # maybe I should search the pwd for a requirements.txt file?
-        
+
         # If the user has a preferred home for their environment storage, we place the env there
         # as the name of the project lowercased.
         # Otherwise, defaults to the project directory with the generic name, 'venv'.
-        virtualenv_dir = os.getenv('WORKON_HOME')
-        if virtualenv_dir:
-            subprocess.Popen(['virtualenv', name], cwd=virtualenv_dir)
+        if os.getenv('WORKON_HOME'):
+            subprocess.Popen(['virtualenv', wk.name], cwd=os.getenv('WORKON_HOME'))
+            wk.set_config('venv_directory', os.path.join(os.getenv('WORKON_HOME'), wk.name))
         else:
             subprocess.Popen(['virtualenv', 'venv'], cwd=directory)
+            wk.set_config('venv_directory', os.path.join(directory, venv))
 
         click.pause()
+        print wk.name
+        print wk.config
