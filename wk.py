@@ -122,9 +122,10 @@ def setup(wk, *args, **kwargs):
         WK.save(wk)
 
 
-@cli.command()
+@cli.command('')
+@click.argument('name', type=str)
 @wk_ctx
-def load(wk, *args, **kwargs):
-    wk.name = 'foo'
+def load(wk, name, *args, **kwargs):
+    wk.name = name
     wk = WK.load(wk)
     print wk.config
